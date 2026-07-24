@@ -337,3 +337,52 @@ make_tab_all_sites = function(site) {
 
 
 
+## Function to examine univariate relationships between risk factors and delayed care-seeking using the first enrollment for each unique participant and create a table using gtsummary -----
+
+make_tab_univar_first_enrollment = function(predictor) {
+  
+  func_dat = fig1_data %>%
+    filter(!is.na(UQ(sym(predictor)))) |>
+    filter(pid==child_id)
+  
+  formula <- as.formula(paste0("delayed_careseek ~ ", predictor, " + enroll_site_fac"))
+  model <- glm(formula, 
+               data = func_dat, 
+               family = poisson)
+               # std.err = "san.se")
+  
+  if(predictor=="age_fac") {label = "Age (months)"
+  } else if(predictor=="sex") {label = "Sex"
+  } else if(predictor=="mat_edu_fac") {label = "Maternal education"
+  } else if(predictor=="cg_age_fac") {label = "Caregiver age (years)"
+  } else if(predictor=="cg_employ_fac") {label = "Caregiver employment status"
+  } else if(predictor=="final_quintile_fac") {label = "Wealth index"
+  } else if(predictor=="aav_fac") {label = "Age-appropriate vaccination"
+  } else if(predictor=="caretype_fac") {label = "Prior care-seeking"
+  } else if(predictor=="preenroll_antibiotics_fac") {label = "Pre-enrollment antibiotics received"
+  } else if(predictor=="time_to_facility") {label = "Time to facility (minutes)"
+  } else if(predictor=="dehydration_fac") {label = "Dehydration"
+  } else if(predictor=="dysentery_fac") {label = "Dysentery"
+  } else if(predictor=="gems_msd_fac") {label = "GEMS-MSD"
+  } else if(predictor=="mvs_fac") {label = "Modified Vesikari score (MVS)"
+  } else if(predictor=="hosp_fac") {label = "Hospitalized during index episode"
+  } else if(predictor=="enr_wasting_fac") {label = "Wasting"
+  } else if(predictor=="enr_stunting_fac") {label = "Stunting"
+  } else if(predictor=="enr_underweight_fac") {label = "Underweight"
+  } else("Error: incorrect predictor argument.")
+  
+  tbl_univar = tbl_regression(model,
+                              include = paste0(predictor),
+                              exponentiate = TRUE,
+                              pvalue_fun = function(x) {
+                                if_else(
+                                  is.na(x),
+                                  NA_character_,
+                                  if_else(x < 0.001, "<0.001", format(round(x, 3), scientific = FALSE))
+                                )
+                              },
+                              label = predictor ~ label,
+                              tidy_fun = \(x, ...) tidy_robust(x, vcov = cov, exponentiate = TRUE)) %>%
+    modify_footnote(everything() ~ NA, abbreviation = TRUE)
+  return(tbl_univar)
+}

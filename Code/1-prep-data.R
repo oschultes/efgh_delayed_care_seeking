@@ -233,6 +233,12 @@ tab3_data = delay_careseek |>
          enr_wasting_fac, enr_stunting_fac, enr_underweight_fac, final_quintile_simple_fac, mat_edu_fac_two, prior_careseek_fac)
 
 
+atab2_data = delay_careseek |>
+  filter(pid==child_id) |>
+  select(pid, delayed_careseek_fac, delayed_careseek, child_id, enroll_site_fac, age_fac, sex, mat_edu_fac, cg_age_fac, cg_employ_fac, final_quintile_fac, 
+         aav_fac, caretype_fac, preenroll_antibiotics_fac, time_to_facility, dehydration_fac, dysentery_fac, gems_msd_fac, 
+         mvs_fac, hosp_fac, enr_wasting_fac, enr_stunting_fac, enr_underweight_fac)
+
 
 # Save datasets as RDS -------
 
@@ -240,6 +246,7 @@ saveRDS(tab1_data, "Last Step Datasets/tab1_data.Rds")
 saveRDS(fig1_data, "Last Step Datasets/fig1_data.Rds")
 saveRDS(tab2_data, "Last Step Datasets/tab2_data.Rds")
 saveRDS(tab3_data, "Last Step Datasets/tab3_data.Rds")
+saveRDS(atab2_data, "Last Step Datasets/atab2_data.Rds")
 
 
 

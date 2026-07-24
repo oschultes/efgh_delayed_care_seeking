@@ -138,7 +138,6 @@ fig1_tab_uvregression = tbl_stack(univariate_results_fig1) %>%
 
 # predictors with p < 0.02: age, caregiver age, prior care-seeking, pre-enrollment antibiotics, dehydration, dysentery, gems-msd, mvs
 
-
 # loop through predictors
 predictors_multivar_fig1 = c("age_fac", "cg_age_fac", "caretype_fac", "preenroll_antibiotics_fac", "dehydration_fac", "dysentery_fac", "gems_msd_fac", "mvs_fac")
 
@@ -174,7 +173,7 @@ fig1_table_gt = fig1_table |>
             locations = cells_column_spanners()) |>
   tab_footnote(footnote = "Univariate models adjusted for enrollment site.",
                locations = cells_column_spanners(spanners = starts_with("uni"))) |>
-  tab_footnote(footnote = "Multivariate models included enrollment site and predictors with p < 0.02 in univariate models. To avoid collinearity between severity indicators, multivariate models adjusted by dehydration and dysentery by default. 
+  tab_footnote(footnote = "Multivariate models adjusted for enrollment site and included predictors with p < 0.02 in univariate models. To avoid collinearity between severity indicators, multivariate models adjusted by dehydration and dysentery by default. 
                Models for GEMS-MSD and MVS did not include other severity indicators.",
                locations = cells_column_spanners(spanners = starts_with("mult")))
   
@@ -448,7 +447,7 @@ tab2_gt = table2 |>
             locations = cells_column_spanners()) |>
   tab_footnote(footnote = "Univariate models adjusted for enrollment site.",
                locations = cells_column_spanners(spanners = starts_with("uni"))) |>
-  tab_footnote(footnote = "Multivariate models included enrollment site and predictors with p < 0.02 in univariate models. To avoid collinearity between severity indicators, multivariate models adjusted by dehydration and dysentery by default. 
+  tab_footnote(footnote = "Multivariate models adjusted for enrollment site and included predictors with p < 0.02 in univariate models. To avoid collinearity between severity indicators, multivariate models adjusted by dehydration and dysentery by default. 
                Models for GEMS-MSD and MVS did not include other severity indicators.",
                locations = cells_column_spanners(spanners = starts_with("mult")))
 
@@ -526,8 +525,110 @@ tab3_gt = table3 |>
 
 
 
+# Appendix Table 1: Number of enrollments by unique child by site
+
+atab1_gt = fig1_data |>
+  group_by(child_id, enroll_site_fac) |>
+  summarise(n = n()) |>
+  tabyl(enroll_site_fac, n) |>
+  gt() |>
+  cols_label(enroll_site_fac = "Enrollment site")
+
+# Export
+atab1_gt %>%
+  gtsave(., "Results/Appendix_Table1.rtf")
+
+
+
+
+
+# Appendix Table 2: Risk factors of delayed care-seeking among first enrollment for each unique child, primary outcome definition -------
+
+
+## Appendix Table 2 - Summary (n (%)) -----
+
+atab2_tab_summary = atab2_data %>% 
+  tbl_summary(include = c(age_fac, sex, mat_edu_fac, cg_age_fac, cg_employ_fac, final_quintile_fac, aav_fac, 
+                          caretype_fac, preenroll_antibiotics_fac, time_to_facility,
+                          dehydration_fac, dysentery_fac, gems_msd_fac, mvs_fac, hosp_fac,
+                          enr_wasting_fac, enr_stunting_fac, enr_underweight_fac),
+              by = delayed_careseek_fac,
+              type = list(dysentery_fac ~ "categorical", hosp_fac ~ "categorical", caretype_fac ~ "categorical", preenroll_antibiotics_fac ~ "categorical"),
+              label = list(age_fac ~ "Age (months)",
+                           sex ~ "Sex",
+                           mat_edu_fac ~ "Maternal education",
+                           cg_age_fac ~ "Caregiver age (years)",
+                           cg_employ_fac ~ "Caregiver employment status",
+                           final_quintile_fac ~ "Wealth index",
+                           caretype_fac ~ "Prior care-seeking",
+                           preenroll_antibiotics_fac ~ "Pre-enrollment antibiotics received",
+                           time_to_facility ~ "Time to facility (minutes)",
+                           aav_fac ~ "Age-appropriate vaccination",
+                           dehydration_fac ~ "Dehydration",
+                           dysentery_fac ~ "Dysentery",
+                           gems_msd_fac ~ "GEMS-MSD",
+                           mvs_fac ~ "Modified Vesikari score (MVS)",
+                           hosp_fac ~ "Hospitalized during index episode",
+                           enr_wasting_fac ~ "Wasting",
+                           enr_stunting_fac ~ "Stunting",
+                           enr_underweight_fac ~ "Underweight"),
+              statistic = list(all_categorical() ~ "{n} / {N} ({p}%)"),
+              digits = list(all_categorical() ~ c(0, 0, 0))
+  ) %>%
+  modify_header(all_stat_cols() ~ "**{level}**") %>%
+  remove_row_type(type = "missing")
+
+
+
+
+## Appendix Table 2 - Univariate regression -----
+
+
+# loop through predictors
+predictors_univar_atab2 = c("age_fac", "sex", "mat_edu_fac", "cg_age_fac", "cg_employ_fac", "final_quintile_fac", "aav_fac", 
+                           "caretype_fac", "preenroll_antibiotics_fac", "time_to_facility",
+                           "dehydration_fac", "dysentery_fac", "gems_msd_fac", "mvs_fac", "hosp_fac", 
+                           "enr_wasting_fac", "enr_stunting_fac", "enr_underweight_fac")
+
+univariate_results_atab2 <- lapply(predictors_univar_atab2, make_tab_univar_first_enrollment)
+
+
+# combine results in one table
+atab2_uvregression = tbl_stack(univariate_results_atab2) %>%
+  modify_header(estimate = "**PR**") %>%
+  modify_footnote(c(estimate, conf.low) ~ "PR = Prevalence Ratio, CI = Confidence Interval")
+
+
+
+## Appendix Table 2 - Merge and export final table -----
+
+atab2_table = tbl_merge(list(atab2_tab_summary, atab2_uvregression),
+                       tab_spanner = FALSE) |>
+  remove_abbreviation()
+
+
+
+# Finalize & export
+atab2_gt = atab2_table |>
+  as_gt() |>
+  # tab_spanner(label = "Univariate",
+  #             columns = c(estimate_2, conf.low_2, p.value_2)) |>
+  tab_style(style = cell_text(weight = "bold"),
+            locations = cells_column_spanners()) |>
+  tab_footnote(footnote = "Models adjusted for enrollment site.",
+               locations = cells_column_spanners(spanners = starts_with("uni")))
+
+# Export
+# atab2_gt %>%
+#   gtsave(., "Results/Appendix_Table2.rtf")
+
+
+
+
+
 
 # Additional summaries for manuscript text -------
+
 
 # Prevalence of care-seeking
 
@@ -544,4 +645,16 @@ tab2_data |>
   adorn_percentages("col") |>
   adorn_pct_formatting(digits = 1) |>
   adorn_ns(position = "front")
+
+# Associations between dehydration, dysentery, GEMS MSD and MVS indicating that collinearity exists
+
+janitor::chisq.test(table(fig1_data$gems_msd_fac, fig1_data$dysentery_fac))
+janitor::chisq.test(table(fig1_data$gems_msd_fac, fig1_data$dehydration_fac))
+janitor::chisq.test(table(fig1_data$gems_msd_fac, fig1_data$mvs_fac))
+janitor::chisq.test(table(fig1_data$mvs_fac, fig1_data$dysentery_fac))
+janitor::chisq.test(table(fig1_data$mvs_fac, fig1_data$dehydration_fac))
+
+
+
+
 
